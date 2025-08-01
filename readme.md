@@ -83,7 +83,7 @@ The app will run on [http://127.0.0.1:5000](http://127.0.0.1:5000)
 
 ## 🔪 Test Payments
 
-Use Razorpay’s [Test Mode](https://razorpay.com/docs/payments/payment-gateway/test-card-upi-details/) credentials to simulate payments.
+Use Razorpay’s [Test Mode] credentials to simulate payments.
 
 ### Example Test:
 
