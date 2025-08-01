@@ -6,61 +6,199 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Custom Razorpay Payment</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 
 <body>
     <div class="card">
-        <h2>Make a Payment</h2>
+        <h2><i class="fas fa-credit-card"></i> Make a Payment</h2>
 
         <form id="payment-form">
             <div class="input-group">
-                <label for="amount">Amount (₹)</label>
+                <label for="amount">
+                    <i class="fas fa-rupee-sign"></i> Amount (₹)
+                </label>
                 <input type="number" id="amount" name="amount" min="1" placeholder="Enter amount" required>
             </div>
 
             <div class="input-group">
-                <label for="currency">Currency</label>
+                <label for="currency">
+                    <i class="fas fa-globe"></i> Currency
+                </label>
                 <select id="currency" name="currency">
-                    <option value="INR">INR</option>
+                    <option value="INR">INR - Indian Rupee</option>
                 </select>
             </div>
 
-            <button type="submit">Pay Now</button>
+            <button type="submit" id="pay-button">
+                <i class="fas fa-lock"></i> Pay Securely Now
+            </button>
         </form>
+
+        <!-- Success message container -->
+        <div id="success-message" style="display: none;" class="success-message">
+            <i class="fas fa-check-circle"></i>
+            <span>Payment processed successfully!</span>
+        </div>
+
+        <!-- Error message container -->
+        <div id="error-message" style="display: none;" class="error-message">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>Something went wrong. Please try again.</span>
+        </div>
     </div>
 
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script>
+        // Add loading state to button
+        function setLoading(loading) {
+            const button = document.getElementById('pay-button');
+            if (loading) {
+                button.classList.add('loading');
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                button.disabled = true;
+            } else {
+                button.classList.remove('loading');
+                button.innerHTML = '<i class="fas fa-lock"></i> Pay Securely Now';
+                button.disabled = false;
+            }
+        }
+
+        // Show success message
+        function showSuccess() {
+            const successMsg = document.getElementById('success-message');
+            successMsg.style.display = 'flex';
+            successMsg.classList.add('success-animation');
+            setTimeout(() => {
+                successMsg.style.display = 'none';
+                successMsg.classList.remove('success-animation');
+            }, 3000);
+        }
+
+        // Show error message
+        function showError() {
+            const errorMsg = document.getElementById('error-message');
+            errorMsg.style.display = 'flex';
+            setTimeout(() => {
+                errorMsg.style.display = 'none';
+            }, 3000);
+        }
+
+        // Add input animations
+        document.querySelectorAll('input, select').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.style.transform = 'scale(1.02)';
+            });
+            
+            input.addEventListener('blur', function() {
+                this.parentElement.style.transform = 'scale(1)';
+            });
+        });
+
         document.getElementById('payment-form').addEventListener('submit', async function (e) {
             e.preventDefault();
+            
             const amount = document.getElementById('amount').value;
             const currency = document.getElementById('currency').value;
 
-            const res = await fetch('/create-order', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ amount, currency })
-            });
-            const data = await res.json();
+            // Validate amount
+            if (!amount || amount <= 0) {
+                showError();
+                return;
+            }
 
-            const options = {
-                key: data.key,
-                amount: data.amount,
-                currency: data.currency,
-                name: "Custom Payment",
-                order_id: data.order_id,
-                handler: function (response) {
-                    fetch('/payment-verification', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: new URLSearchParams(response)
-                    }).then(res => res.text())
-                        .then(msg => alert(msg));
-                },
-                theme: { color: "#006cff" }
-            };
+            setLoading(true);
 
-            new Razorpay(options).open();
+            try {
+                const res = await fetch('/create-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount, currency })
+                });
+
+                if (!res.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await res.json();
+
+                const options = {
+                    key: data.key,
+                    amount: data.amount,
+                    currency: data.currency,
+                    name: "Custom Payment Gateway",
+                    description: `Payment of ₹${amount}`,
+                    order_id: data.order_id,
+                    handler: function (response) {
+                        setLoading(true);
+                        
+                        fetch('/payment-verification', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: new URLSearchParams(response)
+                        })
+                        .then(res => res.text())
+                        .then(msg => {
+                            setLoading(false);
+                            if (msg.includes('success') || msg.includes('Success')) {
+                                showSuccess();
+                                document.getElementById('payment-form').reset();
+                            } else {
+                                showError();
+                            }
+                        })
+                        .catch(() => {
+                            setLoading(false);
+                            showError();
+                        });
+                    },
+                    prefill: {
+                        name: "Customer Name",
+                        email: "customer@example.com",
+                        contact: "9999999999"
+                    },
+                    notes: {
+                        address: "Payment Gateway Demo"
+                    },
+                    theme: { 
+                        color: "#667eea",
+                        backdrop_color: "rgba(0,0,0,0.8)"
+                    },
+                    modal: {
+                        ondismiss: function() {
+                            setLoading(false);
+                        }
+                    }
+                };
+
+                const rzp = new Razorpay(options);
+                rzp.open();
+
+            } catch (error) {
+                console.error('Error:', error);
+                setLoading(false);
+                showError();
+            }
+        });
+
+        // Add card hover effect
+        const card = document.querySelector('.card');
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-5px) scale(1.02)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+        });
+
+        // Add input validation feedback
+        document.getElementById('amount').addEventListener('input', function() {
+            const value = this.value;
+            if (value > 0) {
+                this.style.borderColor = '#48bb78';
+            } else {
+                this.style.borderColor = '#e2e8f0';
+            }
         });
     </script>
 </body>
