@@ -1,25 +1,33 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Custom Razorpay Payment</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
-    <h2>Make a Payment</h2>
+    <div class="card">
+        <h2>Make a Payment</h2>
 
-    <form id="payment-form">
-        <label>Amount (₹):</label>
-        <input type="number" id="amount" name="amount" required><br><br>
+        <form id="payment-form">
+            <div class="input-group">
+                <label for="amount">Amount (₹)</label>
+                <input type="number" id="amount" name="amount" min="1" placeholder="Enter amount" required>
+            </div>
 
-        <label>Currency:</label>
-        <select id="currency" name="currency">
-            <option value="INR">INR</option>
-            <!-- Add more if needed -->
-        </select><br><br>
+            <div class="input-group">
+                <label for="currency">Currency</label>
+                <select id="currency" name="currency">
+                    <option value="INR">INR</option>
+                </select>
+            </div>
 
-        <button type="submit">Pay Now</button>
-    </form>
+            <button type="submit">Pay Now</button>
+        </form>
+    </div>
 
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script>
@@ -30,12 +38,9 @@
 
             const res = await fetch('/create-order', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ amount, currency })
             });
-
             const data = await res.json();
 
             const options = {
@@ -47,20 +52,15 @@
                 handler: function (response) {
                     fetch('/payment-verification', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        },
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                         body: new URLSearchParams(response)
                     }).then(res => res.text())
                         .then(msg => alert(msg));
                 },
-                theme: {
-                    color: "#3399cc"
-                }
+                theme: { color: "#006cff" }
             };
 
-            const rzp = new Razorpay(options);
-            rzp.open();
+            new Razorpay(options).open();
         });
     </script>
 </body>
