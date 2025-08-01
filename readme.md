@@ -85,16 +85,16 @@ The app will run on [http://127.0.0.1:5000](http://127.0.0.1:5000)
 
 Use Razorpay’s [Test Mode](https://razorpay.com/docs/payments/payment-gateway/test-card-upi-details/) credentials to simulate payments.
 
-Example test card:
+### Example Test:
 
-1.Put in amount
-2.CLick pay
-3.Put in your mobile number at the "Using as" field present on the left hand side
-4.CLick pay later
-5.Choose last option "Razorpay xPostpaid"
-6.OTP will be sent to your mobile
-7.Put OTP and submit
-8.Demo page will be shown here you can choose whether you want to simulate payment success or failure
+1. Put in amount
+2. Click **Pay**
+3. Enter your **mobile number** in the **"Using as"** field (left side)
+4. Click **Pay Later**
+5. Choose the last option: **Razorpay xPostpaid**
+6. You'll receive an **OTP** on your mobile
+7. Enter the **OTP** and click **Submit**
+8. On the **demo page**, choose whether to simulate **Payment Success** or **Failure**
 
 ---
 
